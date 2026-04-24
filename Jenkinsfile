@@ -1,43 +1,76 @@
+@Library('mylibrary')_
 pipeline
 {
     agent any
     stages
     {
-        stage('Download')
+        stage('Download_Master')
         {
             steps
             {
-                git 'https://github.com/IntelliqDevops/maven.git'
+                script
+                {
+                    cicd.gitDownload("maven")
+                }
             }
         }
-        stage('Build')
+        stage('Build_Master')
         {
             steps
             {
-                sh 'mvn package'
+                script
+                {
+                    cicd.buildArtifact()
+                }
             }
         }
-        stage('Deployment')
+        stage('Deployment_Master')
         {
-            steps
+            parallel
             {
-                deploy adapters: [tomcat9(alternativeDeploymentContext: '', credentialsId: 'e84c4b79-ad8f-4a55-a74b-7771418a216c', path: '', url: 'http://172.31.28.179:8080')], contextPath: 'mytestapp', war: '**/*.war'
-            }
-        }
-        stage('Testing')
-        {
-            steps
-            {
-                git 'https://github.com/IntelliqDevops/FunctionalTesting.git'
-                sh 'java -jar /var/lib/jenkins/workspace/DeclarativePipeline1/testing.jar'
                 
+                stage('Deploy to QA1')
+                {
+                    steps
+                    {
+                        script
+                        {
+                            cicd.deployTomcat("DeclarativePipelinewithSharedLibraries","172.31.28.179","testapp")
+                        }
+                    }
+                }
+                stage('Deploy to QA2')
+                {
+                    steps
+                    {
+                        script
+                        {
+                             cicd.deployTomcat("DeclarativePipelinewithSharedLibraries","172.31.34.73","testapp")
+                        }
+                    }
+                }
             }
+           
         }
-        stage('Delivery')
+        stage('Testing_Master')
         {
             steps
             {
-                deploy adapters: [tomcat9(alternativeDeploymentContext: '', credentialsId: 'e84c4b79-ad8f-4a55-a74b-7771418a216c', path: '', url: 'http://172.31.31.200:8080')], contextPath: 'myprodapp', war: '**/*.war'
+                script
+                {
+                    cicd.gitDownload("FunctionalTesting")
+                    cicd.runSelenium("DeclarativePipelinewithSharedLibraries")
+                }
+            }
+        }
+        stage('Delivery_Master')
+        {
+            steps
+            {
+                script
+                {
+                    cicd.deployTomcat("DeclarativePipelinewithSharedLibraries","172.31.31.200","prodapp")
+                }
             }
         }
     }
