@@ -10,7 +10,7 @@ pipeline
             {
                 script
                 {
-                    cicd.gitDownload("maven")
+                    cicd.gitDownload("maven8")
                 }
             }
         }
